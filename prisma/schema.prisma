@@ -1,0 +1,187 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  ADMINISTRATOR
+  COMPLIANCE_ANALYST
+  INVESTIGATOR
+}
+
+enum RiskStatus {
+  NEW
+  UNDER_REVIEW
+  ESCALATED
+  RESOLVED
+  FALSE_POSITIVE
+  MONITORING
+  CLEARED
+}
+
+enum InvestigationPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+model User {
+  id String @id @default(cuid())
+  authId String @unique
+  email String @unique
+  name String?
+  role UserRole @default(COMPLIANCE_ANALYST)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  investigations Investigation[] @relation("InvestigationAssignee")
+  auditLogs AuditLog[]
+}
+
+model Account {
+  id String @id
+  name String?
+  accountType String
+  country String?
+  riskScore Int @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  sentTransactions Transaction[] @relation("SentTransactions")
+  receivedTransactions Transaction[] @relation("ReceivedTransactions")
+  investigationAccounts InvestigationAccount[]
+  alerts Alert[]
+}
+
+model Transaction {
+  id String @id
+  senderId String
+  receiverId String
+  amount Decimal @db.Decimal(18,2)
+  currency String @default("USD")
+  timestamp DateTime
+  transactionType String
+  location String?
+  riskScore Int @default(0)
+  status RiskStatus @default(NEW)
+  createdAt DateTime @default(now())
+  sender Account @relation("SentTransactions", fields: [senderId], references: [id])
+  receiver Account @relation("ReceivedTransactions", fields: [receiverId], references: [id])
+  investigationTransactions InvestigationTransaction[]
+  @@index([senderId, timestamp])
+  @@index([receiverId, timestamp])
+  @@index([riskScore])
+}
+
+model Alert {
+  id String @id @default(cuid())
+  accountId String
+  title String
+  description String
+  riskScore Int
+  confidence Int?
+  status RiskStatus @default(NEW)
+  detectedAt DateTime @default(now())
+  account Account @relation(fields: [accountId], references: [id])
+  investigations Investigation[]
+}
+
+model SuspiciousNetwork {
+  id String @id
+  name String
+  detectionReason String
+  accountCount Int
+  totalAmount Decimal @db.Decimal(18,2)
+  suspiciousCount Int
+  riskScore Int
+  firstDetectedAt DateTime
+  status RiskStatus @default(NEW)
+  createdAt DateTime @default(now())
+}
+
+model Investigation {
+  id String @id @default(cuid())
+  title String
+  priority InvestigationPriority @default(MEDIUM)
+  status RiskStatus @default(NEW)
+  assigneeId String?
+  alertId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  assignee User? @relation("InvestigationAssignee", fields: [assigneeId], references: [id])
+  alert Alert? @relation(fields: [alertId], references: [id])
+  accounts InvestigationAccount[]
+  transactions InvestigationTransaction[]
+  notes InvestigationNote[]
+}
+
+model InvestigationAccount {
+  investigationId String
+  accountId String
+  investigation Investigation @relation(fields: [investigationId], references: [id], onDelete: Cascade)
+  account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  @@id([investigationId, accountId])
+  @@index([accountId])
+}
+
+model InvestigationTransaction {
+  investigationId String
+  transactionId String
+  investigation Investigation @relation(fields: [investigationId], references: [id], onDelete: Cascade)
+  transaction Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  @@id([investigationId, transactionId])
+  @@index([transactionId])
+}
+
+model InvestigationNote {
+  id String @id @default(cuid())
+  investigationId String
+  authorId String?
+  content String
+  createdAt DateTime @default(now())
+  investigation Investigation @relation(fields: [investigationId], references: [id], onDelete: Cascade)
+}
+
+model ModelVersion {
+  id String @id @default(cuid())
+  name String
+  version String
+  implementation String
+  trainingStatus String
+  isActive Boolean @default(false)
+  createdAt DateTime @default(now())
+}
+
+model ModelMetric {
+  id String @id @default(cuid())
+  modelVersionId String
+  precision Float?
+  recall Float?
+  f1 Float?
+  rocAuc Float?
+  falsePositiveRate Float?
+  sampleData Boolean @default(true)
+  createdAt DateTime @default(now())
+}
+
+model AnalystFeedback {
+  id String @id @default(cuid())
+  alertId String
+  analystId String?
+  label String
+  comment String?
+  createdAt DateTime @default(now())
+}
+
+model AuditLog {
+  id String @id @default(cuid())
+  actorId String?
+  action String
+  entityType String
+  entityId String
+  metadata Json?
+  createdAt DateTime @default(now())
+  actor User? @relation(fields: [actorId], references: [id])
+}

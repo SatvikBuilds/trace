@@ -1,0 +1,26 @@
+"use client";
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { ArrowUpRight, CircleAlert, Landmark, Network, Search, Timer, TrendingDown } from "lucide-react";
+import Link from "next/link";
+import { demoTransactions, networkData } from "@/lib/demo-data";
+import { Badge, PageHeader, Panel } from "@/components/ui";
+
+const activity=[{t:"00",v:42},{t:"04",v:58},{t:"08",v:49},{t:"12",v:74},{t:"16",v:68},{t:"20",v:86},{t:"23",v:79}];
+const risk=[{n:"Low",v:63},{n:"Medium",v:24},{n:"High",v:13}];
+const kpis=[
+ {label:"Total Transactions",value:"248,842",change:"+12.4%",icon:Landmark},{label:"Suspicious Transactions",value:"1,284",change:"+8.2%",icon:CircleAlert},{label:"High-Risk Accounts",value:"392",change:"-3.1%",icon:Search},{label:"Detected Networks",value:"47",change:"+6",icon:Network},{label:"False Positive Rate",value:"4.8%",change:"-0.6%",icon:TrendingDown},{label:"Avg. Investigation",value:"18m",change:"-4m",icon:Timer}
+];
+
+export default function DashboardPage(){
+ return <div className="p-4 lg:p-7"><PageHeader eyebrow="Intelligence overview" title="Risk Command Center" description="Live operational view · Sample demonstration data" action={<Link href="/detection" className="rounded-md bg-cyan-400 px-3.5 py-2 text-xs font-bold text-[#071019]">Run detection</Link>} />
+ <div className="mb-5 grid grid-cols-2 gap-3 xl:grid-cols-6">{kpis.map((k)=>{const Icon=k.icon;return <Panel key={k.label} className="p-3.5"><div className="flex items-center justify-between"><span className="text-slate-500"><Icon className="h-4 w-4" /></span><span className="text-[10px] text-emerald-400">{k.change}</span></div><div className="mt-3 text-xl font-semibold text-white">{k.value}</div><div className="mt-1 text-[10px] text-slate-500">{k.label}</div></Panel>})}</div>
+ <div className="grid gap-3 xl:grid-cols-[minmax(0,2fr)_minmax(280px,.8fr)]">
+  <Panel className="p-4"><div className="mb-4 flex items-center justify-between"><div><h2 className="text-sm font-semibold">Transaction Activity</h2><p className="mt-1 text-[10px] text-slate-500">24-hour volume · sample data</p></div><Badge>247.2K TX</Badge></div><div className="h-[220px]"><ResponsiveContainer width="100%" height="100%"><AreaChart data={activity}><defs><linearGradient id="a" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#22d3ee" stopOpacity={.22}/><stop offset="95%" stopColor="#22d3ee" stopOpacity={0}/></linearGradient></defs><CartesianGrid stroke="#1b2636" strokeDasharray="3 3"/><XAxis dataKey="t" tick={{fill:'#64748b',fontSize:10}}/><YAxis tick={{fill:'#64748b',fontSize:10}}/><Tooltip contentStyle={{background:'#111827',border:'1px solid #263448',fontSize:11}}/><Area type="monotone" dataKey="v" stroke="#22d3ee" fill="url(#a)" strokeWidth={2}/></AreaChart></ResponsiveContainer></div></Panel>
+  <Panel className="p-4"><div className="mb-4"><h2 className="text-sm font-semibold">Risk Distribution</h2><p className="mt-1 text-[10px] text-slate-500">Current account population</p></div><div className="h-[220px]"><ResponsiveContainer width="100%" height="100%"><BarChart data={risk} layout="vertical"><CartesianGrid stroke="#1b2636" horizontal={false}/><XAxis type="number" hide/><YAxis type="category" dataKey="n" tick={{fill:'#94a3b8',fontSize:10}} width={58}/><Tooltip contentStyle={{background:'#111827',border:'1px solid #263448',fontSize:11}}/><Bar dataKey="v" fill="#22d3ee" radius={[0,3,3,0]} barSize={10}/></BarChart></ResponsiveContainer></div></Panel>
+ </div>
+ <div className="mt-3 grid gap-3 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,.55fr)]">
+  <Panel><div className="flex h-12 items-center justify-between border-b border-slate-800/70 px-4"><h2 className="text-sm font-semibold">Recent Suspicious Activity</h2><Link href="/transactions" className="text-[10px] text-cyan-400">View all</Link></div><div className="overflow-x-auto"><table className="w-full text-left"><thead className="text-[9px] uppercase tracking-wider text-slate-600"><tr><th className="p-3">Transaction</th><th>Flow</th><th>Amount</th><th>Risk</th><th>Status</th></tr></thead><tbody>{demoTransactions.slice(0,5).map(t=><tr key={t.id} className="border-t border-slate-800/50 text-[11px]"><td className="p-3 font-medium text-slate-300">{t.id}</td><td>{t.sender}<span className="mx-1 text-slate-600">→</span>{t.receiver}</td><td>{t.currency} {t.amount.toLocaleString()}</td><td><span className={t.risk>80?"text-red-400":"text-orange-400"}>{t.risk}</span></td><td><Badge tone={t.status==="Escalated"?"red":"orange"}>{t.status}</Badge></td></tr>)}</tbody></table></div></Panel>
+  <Panel className="p-4"><div className="mb-3 flex items-center justify-between"><h2 className="text-sm font-semibold">High-Risk Networks</h2><Network className="h-4 w-4 text-violet-400" /></div><div className="space-y-2">{networkData.map(n=><Link href="/networks" key={n.id} className="block rounded-md border border-slate-800/70 p-3 hover:border-cyan-400/20"><div className="flex justify-between"><span className="text-xs font-medium">{n.id}</span><span className="text-xs font-bold text-red-400">{n.risk}</span></div><div className="mt-2 text-[10px] text-slate-500">{n.accounts} accounts · ${n.amount.toLocaleString()}</div></Link>)}</div></Panel>
+ </div>
+ </div>;
+}
